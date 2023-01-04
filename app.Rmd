@@ -15,7 +15,7 @@ header-includes:
   - \usepackage{colortbl}
 ---
 
-```{r setup, echo=FALSE}
+```{r setup, echo=FALSE, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
 library(tidyverse)
