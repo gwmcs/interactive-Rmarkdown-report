@@ -1,5 +1,5 @@
 ---
-title: "<img src=\"MCS_Logo_Full_TwoTone_Ink_Small_Screen_RGB.png\" style=\"float: right;width:25%;\"/> "
+title: "<img src=\"www/MCS_Logo_Full_TwoTone_Ink_Small_Screen_RGB.png\" style=\"float: right;width:25%;\"/> "
 output:
     html_document
 runtime: shiny
