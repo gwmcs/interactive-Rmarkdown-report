@@ -1,0 +1,280 @@
+---
+title: "<img src=\"MCS_Logo_Full_TwoTone_Ink_Small_Screen_RGB.png\" style=\"float: right;width:25%;\"/> "
+output:
+    html_document
+runtime: shiny
+header-includes:
+  - \usepackage{graphicx}
+  - \usepackage{fancyhdr}
+  - \usepackage{fancy}
+  - \setlength\headheight{28pt}
+  - \usepackage{fontspec}
+  - \setmainfont{Poppins}
+  - \usepackage{float}
+  - \usepackage{booktabs}
+  - \usepackage{colortbl}
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+load("~/../Desktop/kate ne/BW_NW_2022_data_analysed.RData")
+
+```
+
+<br>
+<br>
+
+# **`r textOutput("selected_site")`**
+#### Author: Greg Wannell
+#### Report generated: `r Sys.Date()`
+
+<br>
+<br>
+
+This report uses year-round Beachwatch data from the years 2022 to
+2022. All charts are interactive and can be hovered over
+to bring up additional information. Charts can be downloaded as individual 
+.PNG files by clicking on the 'Download plot as a png' icon at the top of the 
+chart. The full report can be exported as a PDF by pressing (⌘ Command on 
+mac) or (Ctrl on Windows) + P. This opens a Print dialog window where you can 
+choose the option 'Save as PDF'. Any question please contact Greg Wannell at 
+greg.wannell@mcsuk.org. 
+
+<br>
+
+### **Choose a stretch: **
+
+```{r echo=FALSE}
+selectInput("name", "Select the stretch you're interested in",
+            choices = unique(bw$stretch_name),
+            selected = bw$stretch_name[1])
+
+
+output$selected_site <- renderText({
+  paste("Stretch Name: ", input$name)
+})
+
+```
+## **Summary**
+
+Summary statistics across all surveys within the given location and time frame. 
+
+<div style="margin-bottom:-20px;">
+```{r echo=FALSE}
+
+# get headline stats
+
+require(knitr)
+require(kableExtra)
+
+output$t1 <- function() {
+   engagement_stats %>% 
+  filter(stretch_name == input$name) %>% 
+    select(n_surveys, volunteers, length_surveyed, bags_collected, weight_collected_kg) %>% 
+      kbl(
+      bottomrule = "",
+      toprule = "",
+      midrule = "",
+      align = "l",
+      digits = 1,
+      col.names = c("Surveys", "Volunteers", "Length Surveyed", "Bag Collected", 
+                "Weight Collected (kg)")) %>% 
+    kable_styling()
+}
+
+tableOutput("t1")
+
+```
+</div>
+```{r echo=FALSE}
+output$t2 <-  function() {
+  litter_stats %>% 
+  ungroup() %>% 
+  filter(stretch_name == input$name) %>% 
+    select(total_count,mean_count) %>% 
+    kbl(
+  bottomrule = "",
+  toprule = "",
+  midrule = "",
+  align = "l",
+  digits = 1,
+  col.names = c("Total items", "Average Items/100m")) %>% 
+  kable_styling(latex_options = "hover", position = "left", full_width = FALSE)
+}
+
+tableOutput("t2")
+```
+
+<br>
+
+## **Top 10 litter items** 
+
+This looks at the most abundant litter items found across all surveys within the
+given location and time frame. This information is used to help monitor the 
+dominance of litter items and identify where work is needed. 
+
+```{r include=TRUE}
+require(plotly)
+  
+output$p1 <- renderPlotly({
+  top_10 %>%
+  filter(stretch_name == input$name) %>% 
+  ungroup() %>% 
+  select(litter_item, mean_count, percent_of_total, presence) %>% 
+  plot_ly(
+  x = ~mean_count,
+  y = ~reorder(litter_item, mean_count),
+  type = "bar",
+  orientation = 'h',
+  marker = list(color = "#232332")) %>% 
+  layout(yaxis = list(title = "", zeroline = FALSE, showline = FALSE),
+         xaxis = list(title = "", showgrid = FALSE))
+  
+})
+
+plotlyOutput("p1")
+
+```
+
+```{r include=TRUE, echo=FALSE, fig.align='left', out.width='100%'}
+
+output$t3 <-  function() {
+  top_10 %>%
+  filter(stretch_name == input$name) %>% 
+  ungroup() %>% 
+  select(litter_item, mean_count, percent_of_total, presence) %>% 
+    kbl(
+      col.names = c("Litter Item",
+                              "Average/100m",
+                              "% of Total",
+                              "% of Cleans")) %>%
+    kable_styling("hover", full_width = TRUE,
+                  position = "left", )
+}
+
+tableOutput("t3")
+```
+
+<br>
+
+## **Sources** 
+
+This looks at  the main sources of litter found across all surveys. Source of 
+beach litter is a proxy for where that litter has likely derived from. Currently, 
+MCS separates litter items into 7 sources which can help highlight spatial 
+differences in human activity and habits, and the physical characteristics of 
+each beach stretch/reporting region. 
+
+```{r}
+
+output$p2 <- renderPlotly({
+  source_stats %>%
+  filter(stretch_name == input$name) %>% 
+  ungroup() %>% 
+    select(source, total_count, mean_count, percent_of_total, presence) %>% 
+  rename("Source" = "source", 
+         "Items found" = "total_count", 
+         "Items per 100m" = "mean_count",
+         "% of Total" = "percent_of_total",
+         "% of Cleans" = "presence") %>%
+  plot_ly(
+    labels = ~Source, 
+              values = ~`% of Total`,
+              textposition = '', 
+              textinfo = 'percent', 
+              textfont = list(color = '#000000', size = 12),
+              text = ~paste(`Items per 100m`, " per 100m"), 
+              hoverinfo = 'label+text',
+              marker = list(line = list(color = "#FFFFFF", width = 2)), 
+                            colors=c("#00b9b0", "#4dc9d6", "#a3d1ce", 
+                                     "#38af87", "#518c87","#3d9be2", "blue4")) %>%
+  add_pie(hole = 0.55) %>% 
+  layout(title = '', showlegend = TRUE, legend = list(font = list(size = 12)),
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+})
+
+plotlyOutput("p2")
+```
+
+```{r}
+
+output$t4 <-  function() {
+  source_stats %>%
+  filter(stretch_name == input$name) %>% 
+  ungroup() %>% 
+  select(source, total_count, mean_count, percent_of_total, presence) %>% 
+  rename("Source" = "source", 
+         "Items found" = "total_count", 
+         "Items per 100m" = "mean_count",
+         "% of Total" = "percent_of_total",
+         "% of Cleans" = "presence") %>% 
+    kbl() %>%
+    kable_styling("hover", full_width = TRUE,
+                  position = "left", )
+}
+
+tableOutput("t4")
+ 
+```
+<br>
+
+## **Materials**
+
+This looks at the material composition of the litter found across all surveys. 
+Currently, there are 11 categories which refer to the main construction material 
+the litter is made of. 
+
+```{r}
+
+output$p3 <- renderPlotly({
+  material_stats %>%
+    filter(stretch_name == input$name) %>% 
+    ungroup() %>% 
+    select(material, total_count, mean_count, percent_of_total, presence) %>% 
+    rename("Material" = "material", 
+         "Items found" = "total_count", 
+         "Items per 100m" = "mean_count",
+         "% of Total" = "percent_of_total",
+         "% of Cleans" = "presence") %>%
+    plot_ly(
+      labels = ~Material,
+      values = ~`% of Total`,
+      textposition = '',
+      textinfo = 'percent',
+      textfont = list(color = '#000000', size = 12),
+      text = ~paste(`Items per 100m`, " per 100m"),
+      hoverinfo = 'label+text',
+      marker = list(line = list(color = "#FFFFFF", width = 2)),
+      colors=c("#00b9b0", "#4dc9d6", "#a3d1ce", 
+                                     "#38af87", "#518c87","#3d9be2", "blue4")) %>%
+    add_pie(hole = 0.55) %>%
+    layout(title = '', showlegend = TRUE, legend = list(font = list(size = 12)),
+           xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+           yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+})
+
+plotlyOutput("p3")
+```
+
+```{r}
+
+output$t5 <-  function() {
+  material_stats %>%
+  filter(stretch_name == input$name) %>% 
+  ungroup() %>% 
+  select(material, total_count, mean_count, percent_of_total, presence) %>% 
+  rename("Material" = "material", 
+         "Items found" = "total_count", 
+         "Items per 100m" = "mean_count",
+         "% of Total" = "percent_of_total",
+         "% of Cleans" = "presence") %>% 
+    kbl() %>%
+    kable_styling("hover", full_width = TRUE,
+                  position = "left", )
+}
+
+tableOutput("t5")
+ 
+```
