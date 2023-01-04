@@ -18,6 +18,12 @@ header-includes:
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(plotly)
+library(ggplot2)
+
 load("data/BW_NW_2022_data_analysed.RData")
 
 ```
