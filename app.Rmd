@@ -85,7 +85,7 @@ tableOutput("t1")
 
 ```
 </div>
-```{r echo=FALSE}
+```{r}
 output$t2 <-  function() {
   litter_stats %>% 
   ungroup() %>% 
@@ -97,7 +97,7 @@ output$t2 <-  function() {
   midrule = "",
   align = "l",
   digits = 1,
-  col.names = c("Total items", "Average Items/100m")) %>% 
+  col.names = c("Total items", "Average Items/100m (median)")) %>% 
   kable_styling(latex_options = "hover", position = "left", full_width = FALSE)
 }
 
@@ -108,9 +108,8 @@ tableOutput("t2")
 
 ### **Top 10 litter items** 
 
-This looks at the most abundant litter items found across all surveys within the
-given location and time frame. This information is used to help monitor the 
-dominance of litter items and identify where work is needed. 
+This looks at the most abundant litter items found in all surveys. The ranking is determined by their median count. If two items have the same median count, the item 
+with the higher total number of items found will be ranked higher.
 
 ```{r}
 require(plotly)
@@ -156,7 +155,10 @@ tableOutput("t3")
 
 <br>
 
-### **Top 10 most widespead**
+### **Top 10 most widespread items**
+
+This examines litter items that are regularly identified in surveys, regardless of the quantity found. Values are reported as percentages. 
+
 ```{r}
 require(plotly)
   
@@ -170,7 +172,7 @@ output$p5 <- renderPlotly({
   y = ~reorder(litter_item, presence),
   type = "bar",
   orientation = 'h',
-  marker = list(color = "#232332")) %>% 
+  marker = list(color = "#4dc9d6")) %>% 
   layout(yaxis = list(title = "", zeroline = FALSE, showline = FALSE),
          xaxis = list(title = "", showgrid = FALSE))
   
@@ -245,7 +247,7 @@ tableOutput("t4")
 
 ### **Materials**
 
-This looks at the material composition of the litter found across all surveys. 
+This looks at the material composition of litter found across all surveys. 
 Currently, there are 11 categories which refer to the main construction material 
 the litter is made of. 
 
