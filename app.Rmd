@@ -16,13 +16,14 @@ header-includes:
 ---
 
 ```{r setup, echo=FALSE, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, error = TRUE)
 
 library(tidyverse)
 library(knitr)
 library(kableExtra)
 library(plotly)
 library(ggplot2)
+library(shiny)
 
 load("data/BW_2022_data_analysed.RData")
 
@@ -70,12 +71,9 @@ Summary statistics across all surveys within the given location and time frame.
 ```{r echo=FALSE}
 
 # get headline stats
-
-require(knitr)
-require(kableExtra)
-
 output$t1 <- function() {
    engagement_stats %>% 
+    ungroup() %>% 
     filter(stretch_country == input$name) %>% 
     select(n_surveys, volunteers, length_surveyed, bags_collected, weight_collected_kg) %>% 
       kbl(
@@ -120,13 +118,13 @@ This looks at the most abundant litter items found across all surveys within the
 given location and time frame. This information is used to help monitor the 
 dominance of litter items and identify where work is needed. 
 
-```{r include=TRUE}
+```{r}
 require(plotly)
   
 output$p1 <- renderPlotly({
   top_10_median %>%
-  filter(stretch_country == input$name) %>% 
   ungroup() %>% 
+  filter(stretch_country == input$name) %>% 
   select(litter_item, median_count, percent_of_median, presence) %>% 
   plot_ly(
   x = ~median_count,
@@ -143,12 +141,12 @@ plotlyOutput("p1")
 
 ```
 
-```{r include=TRUE, echo=FALSE, fig.align='left', out.width='100%'}
+```{r fig.align='left', out.width='100%'}
 
 output$t3 <-  function() {
   top_10_median %>%
+    ungroup() %>% 
   filter(stretch_country == input$name) %>% 
-  ungroup() %>% 
   select(litter_item, median_count, percent_of_median, presence) %>% 
     kbl(
       col.names = c("Litter Item",
@@ -172,13 +170,13 @@ MCS separates litter items into 7 sources which can help highlight spatial
 differences in human activity and habits, and the physical characteristics of 
 each beach stretch/reporting region. 
 
-```{r}
+```{r sources}
 
 output$p2 <- renderPlotly({
   source_stats %>%
+    ungroup() %>% 
   filter(stretch_country == input$name) %>% 
-  ungroup() %>% 
-    select(source, total_count, median_count, percent_of_median, presence) %>% 
+  select(source, total_count, median_count, percent_of_median, presence) %>% 
   rename("Source" = "source", 
          "Items found" = "total_count", 
          "Items per 100m" = "median_count",
@@ -186,7 +184,7 @@ output$p2 <- renderPlotly({
          "% of Cleans" = "presence") %>%
   plot_ly(
     labels = ~Source, 
-              values = ~`% of Total`,
+              values = ~`% of Median`,
               textposition = '', 
               textinfo = 'percent', 
               textfont = list(color = '#000000', size = 12),
@@ -202,14 +200,15 @@ output$p2 <- renderPlotly({
 })
 
 plotlyOutput("p2")
+
 ```
 
-```{r}
+```{r sources_table}
 
 output$t4 <-  function() {
   source_stats %>%
+     ungroup() %>% 
   filter(stretch_country == input$name) %>% 
-  ungroup() %>% 
   select(source, total_count, median_count, percent_of_median, presence) %>% 
   rename("Source" = "source", 
          "Items found" = "total_count", 
@@ -232,13 +231,13 @@ This looks at the material composition of the litter found across all surveys.
 Currently, there are 11 categories which refer to the main construction material 
 the litter is made of. 
 
-```{r}
+```{r materials}
 
 output$p3 <- renderPlotly({
   material_stats %>%
+     ungroup() %>% 
     filter(stretch_country == input$name) %>% 
-    ungroup() %>% 
-    select(material, total_count, mean_count, percent_of_total, presence) %>% 
+    select(material, total_count, median_count, percent_of_median, presence) %>% 
     rename("Material" = "material", 
          "Items found" = "total_count", 
          "Items per 100m" = "median_count",
@@ -246,7 +245,7 @@ output$p3 <- renderPlotly({
          "% of Cleans" = "presence") %>%
     plot_ly(
       labels = ~Material,
-      values = ~`% of Total`,
+      values = ~`% of Median`,
       textposition = '',
       textinfo = 'percent',
       textfont = list(color = '#000000', size = 12),
@@ -264,16 +263,16 @@ output$p3 <- renderPlotly({
 plotlyOutput("p3")
 ```
 
-```{r}
+```{r material_table}
 
 output$t5 <-  function() {
   material_stats %>%
+      ungroup() %>%
   filter(stretch_country == input$name) %>% 
-  ungroup() %>% 
   select(material, total_count, median_count, percent_of_median, presence) %>% 
   rename("Material" = "material", 
          "Items found" = "total_count", 
-         "Items per 100m" = "mean_count",
+         "Items per 100m" = "median_count",
          "% of Median" = "percent_of_median",
          "% of Cleans" = "presence") %>% 
     kbl() %>%
