@@ -1,5 +1,7 @@
 ---
-title: "<img src=\"www/MCS_Logo_Full_TwoTone_Ink_Small_Screen_RGB.png\" style=\"float: right;width:25%;\"/> "
+title: "<strong> Beachwatch 2022 Annual Report </strong> <img src=\"www/MCS_Logo_Full_TwoTone_Ink_Small_Screen_RGB.png\" style=\"float: right;width:25%;\"/> "
+author: "Author: Greg Wannell"
+date: "Report generated: `r format(Sys.time(), '%d-%m-%Y')`"
 output:
     html_document
 runtime: shiny
@@ -7,7 +9,7 @@ header-includes:
   - \usepackage{graphicx}
   - \usepackage{fancyhdr}
   - \usepackage{fancy}
-  - \setlength\headheight{28pt}
+  - \setlength\headheight{50pt}
   - \usepackage{fontspec}
   - \setmainfont{Poppins}
   - \usepackage{float}
@@ -28,44 +30,36 @@ library(shiny)
 load("data/BW_2022_data_analysed.RData")
 
 ```
-
 <br>
-<br>
+This report uses year-round Beachwatch data from 2022. All charts are 
+interactive and can be hovered over to bring up additional information. 
+Charts can be downloaded as individual .PNG files by clicking on the 'Download 
+plot as a png' icon at the top of the chart. The full report can be exported as
+a PDF by pressing (⌘ Command on mac) or (Ctrl on Windows) + P. This opens a 
+Print dialog window where you can choose the option 'Save as PDF'. 
+Any question please contact Greg Wannell at greg.wannell@mcsuk.org. 
 
-# **`r textOutput("selected_site")`**
-#### Author: Greg Wannell
-#### Report generated: `r Sys.Date()`
-
-<br>
-<br>
-
-This report uses year-round Beachwatch data from the years 2022 to
-2022. All charts are interactive and can be hovered over
-to bring up additional information. Charts can be downloaded as individual 
-.PNG files by clicking on the 'Download plot as a png' icon at the top of the 
-chart. The full report can be exported as a PDF by pressing (⌘ Command on 
-mac) or (Ctrl on Windows) + P. This opens a Print dialog window where you can 
-choose the option 'Save as PDF'. Any question please contact Greg Wannell at 
-greg.wannell@mcsuk.org. 
-
-<br>
-
-### **Choose a stretch: **
+### **Choose a country: **
 
 ```{r echo=FALSE}
-selectInput("name", "Select the stretch you're interested in",
+selectInput("name", "Select the country you're interested in",
             choices = unique(engagement_stats$stretch_country),
             selected = engagement_stats$stretch_country[6])
 
 
 output$selected_site <- renderText({
-  paste("Stretch Name: ", input$name)
+  paste("Stretch Country: ", input$name)
 })
 
 ```
-## **Summary**
 
-Summary statistics across all surveys within the given location and time frame. 
+<br>
+
+## **`r textOutput("selected_site")`**
+
+### **Summary**
+
+Summary statistics across all surveys within the selected region. 
 
 <div style="margin-bottom:-20px;">
 ```{r echo=FALSE}
@@ -112,7 +106,7 @@ tableOutput("t2")
 
 <br>
 
-## **Top 10 litter items** 
+### **Top 10 litter items** 
 
 This looks at the most abundant litter items found across all surveys within the
 given location and time frame. This information is used to help monitor the 
@@ -162,7 +156,31 @@ tableOutput("t3")
 
 <br>
 
-## **Sources** 
+### **Top 10 most widespead**
+```{r}
+require(plotly)
+  
+output$p5 <- renderPlotly({
+  top_10_presence %>%
+  ungroup() %>% 
+  filter(stretch_country == input$name) %>% 
+  select(litter_item, presence) %>% 
+  plot_ly(
+  x = ~presence,
+  y = ~reorder(litter_item, presence),
+  type = "bar",
+  orientation = 'h',
+  marker = list(color = "#232332")) %>% 
+  layout(yaxis = list(title = "", zeroline = FALSE, showline = FALSE),
+         xaxis = list(title = "", showgrid = FALSE))
+  
+})
+
+plotlyOutput("p5")
+
+```
+
+### **Sources** 
 
 This looks at  the main sources of litter found across all surveys. Source of 
 beach litter is a proxy for where that litter has likely derived from. Currently, 
@@ -225,7 +243,7 @@ tableOutput("t4")
 ```
 <br>
 
-## **Materials**
+### **Materials**
 
 This looks at the material composition of the litter found across all surveys. 
 Currently, there are 11 categories which refer to the main construction material 
