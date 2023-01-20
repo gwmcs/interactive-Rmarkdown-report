@@ -24,7 +24,7 @@ library(kableExtra)
 library(plotly)
 library(ggplot2)
 
-load("data/BW_NW_2022_data_analysed.RData")
+load("data/BW_2022_data_analysed.RData")
 
 ```
 
@@ -53,8 +53,8 @@ greg.wannell@mcsuk.org.
 
 ```{r echo=FALSE}
 selectInput("name", "Select the stretch you're interested in",
-            choices = unique(bw$stretch_country),
-            selected = bw$stretch_country[1])
+            choices = unique(engagement_stats$stretch_country),
+            selected = engagement_stats$stretch_country[6])
 
 
 output$selected_site <- renderText({
