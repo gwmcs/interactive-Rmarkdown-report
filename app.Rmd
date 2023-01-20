@@ -53,8 +53,8 @@ greg.wannell@mcsuk.org.
 
 ```{r echo=FALSE}
 selectInput("name", "Select the stretch you're interested in",
-            choices = unique(bw$stretch_name),
-            selected = bw$stretch_name[1])
+            choices = unique(bw$stretch_country),
+            selected = bw$stretch_country[1])
 
 
 output$selected_site <- renderText({
@@ -76,7 +76,7 @@ require(kableExtra)
 
 output$t1 <- function() {
    engagement_stats %>% 
-  filter(stretch_name == input$name) %>% 
+    filter(stretch_country == input$name) %>% 
     select(n_surveys, volunteers, length_surveyed, bags_collected, weight_collected_kg) %>% 
       kbl(
       bottomrule = "",
@@ -97,8 +97,8 @@ tableOutput("t1")
 output$t2 <-  function() {
   litter_stats %>% 
   ungroup() %>% 
-  filter(stretch_name == input$name) %>% 
-    select(total_count,mean_count) %>% 
+  filter(stretch_country == input$name) %>% 
+    select(total_count, median_count) %>% 
     kbl(
   bottomrule = "",
   toprule = "",
@@ -124,13 +124,13 @@ dominance of litter items and identify where work is needed.
 require(plotly)
   
 output$p1 <- renderPlotly({
-  top_10 %>%
-  filter(stretch_name == input$name) %>% 
+  top_10_median %>%
+  filter(stretch_country == input$name) %>% 
   ungroup() %>% 
-  select(litter_item, mean_count, percent_of_total, presence) %>% 
+  select(litter_item, median_count, percent_of_median, presence) %>% 
   plot_ly(
-  x = ~mean_count,
-  y = ~reorder(litter_item, mean_count),
+  x = ~median_count,
+  y = ~reorder(litter_item, median_count),
   type = "bar",
   orientation = 'h',
   marker = list(color = "#232332")) %>% 
@@ -146,14 +146,14 @@ plotlyOutput("p1")
 ```{r include=TRUE, echo=FALSE, fig.align='left', out.width='100%'}
 
 output$t3 <-  function() {
-  top_10 %>%
-  filter(stretch_name == input$name) %>% 
+  top_10_median %>%
+  filter(stretch_country == input$name) %>% 
   ungroup() %>% 
-  select(litter_item, mean_count, percent_of_total, presence) %>% 
+  select(litter_item, median_count, percent_of_median, presence) %>% 
     kbl(
       col.names = c("Litter Item",
                               "Average/100m",
-                              "% of Total",
+                              "% of Median",
                               "% of Cleans")) %>%
     kable_styling("hover", full_width = TRUE,
                   position = "left", )
@@ -176,13 +176,13 @@ each beach stretch/reporting region.
 
 output$p2 <- renderPlotly({
   source_stats %>%
-  filter(stretch_name == input$name) %>% 
+  filter(stretch_country == input$name) %>% 
   ungroup() %>% 
-    select(source, total_count, mean_count, percent_of_total, presence) %>% 
+    select(source, total_count, median_count, percent_of_median, presence) %>% 
   rename("Source" = "source", 
          "Items found" = "total_count", 
-         "Items per 100m" = "mean_count",
-         "% of Total" = "percent_of_total",
+         "Items per 100m" = "median_count",
+         "% of Median" = "percent_of_median",
          "% of Cleans" = "presence") %>%
   plot_ly(
     labels = ~Source, 
@@ -208,13 +208,13 @@ plotlyOutput("p2")
 
 output$t4 <-  function() {
   source_stats %>%
-  filter(stretch_name == input$name) %>% 
+  filter(stretch_country == input$name) %>% 
   ungroup() %>% 
-  select(source, total_count, mean_count, percent_of_total, presence) %>% 
+  select(source, total_count, median_count, percent_of_median, presence) %>% 
   rename("Source" = "source", 
          "Items found" = "total_count", 
-         "Items per 100m" = "mean_count",
-         "% of Total" = "percent_of_total",
+         "Items per 100m" = "median_count",
+         "% of Median" = "percent_of_median",
          "% of Cleans" = "presence") %>% 
     kbl() %>%
     kable_styling("hover", full_width = TRUE,
@@ -236,13 +236,13 @@ the litter is made of.
 
 output$p3 <- renderPlotly({
   material_stats %>%
-    filter(stretch_name == input$name) %>% 
+    filter(stretch_country == input$name) %>% 
     ungroup() %>% 
     select(material, total_count, mean_count, percent_of_total, presence) %>% 
     rename("Material" = "material", 
          "Items found" = "total_count", 
-         "Items per 100m" = "mean_count",
-         "% of Total" = "percent_of_total",
+         "Items per 100m" = "median_count",
+         "% of Median" = "percent_of_median",
          "% of Cleans" = "presence") %>%
     plot_ly(
       labels = ~Material,
@@ -268,13 +268,13 @@ plotlyOutput("p3")
 
 output$t5 <-  function() {
   material_stats %>%
-  filter(stretch_name == input$name) %>% 
+  filter(stretch_country == input$name) %>% 
   ungroup() %>% 
-  select(material, total_count, mean_count, percent_of_total, presence) %>% 
+  select(material, total_count, median_count, percent_of_median, presence) %>% 
   rename("Material" = "material", 
          "Items found" = "total_count", 
          "Items per 100m" = "mean_count",
-         "% of Total" = "percent_of_total",
+         "% of Median" = "percent_of_median",
          "% of Cleans" = "presence") %>% 
     kbl() %>%
     kable_styling("hover", full_width = TRUE,
