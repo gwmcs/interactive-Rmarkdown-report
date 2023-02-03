@@ -1,7 +1,7 @@
 ---
 title: "<strong> Beachwatch 2022 Annual Report </strong> <img src=\"www/MCS_Logo_Full_TwoTone_Ink_Small_Screen_RGB.png\" style=\"float: right;width:25%;\"/> "
 author: "Author: Greg Wannell"
-date: "Report generated: `r format(Sys.time(), '%d-%m-%Y')`"
+date: "Last updated: `r format(Sys.time(), '%d-%m-%Y')`"
 output:
     html_document
 runtime: shiny
@@ -26,6 +26,10 @@ library(kableExtra)
 library(plotly)
 library(ggplot2)
 library(shiny)
+library(leaflet)
+library(leaflet.extras)
+library(htmltools)
+library(tidyselect)
 
 load("data/BW_2022_data_analysed.RData")
 
@@ -122,6 +126,8 @@ output$p1 <- renderPlotly({
   plot_ly(
   x = ~median_count,
   y = ~reorder(litter_item, median_count),
+  text = ~ median_count,
+  textposition = "inside",
   type = "bar",
   orientation = 'h',
   marker = list(color = "#232332")) %>% 
@@ -132,25 +138,6 @@ output$p1 <- renderPlotly({
 
 plotlyOutput("p1")
 
-```
-
-```{r fig.align='left', out.width='100%'}
-
-output$t3 <-  function() {
-  top_10_median %>%
-    ungroup() %>% 
-  filter(stretch_country == input$name) %>% 
-  select(litter_item, median_count, percent_of_median, presence) %>% 
-    kbl(
-      col.names = c("Litter Item",
-                              "Average/100m",
-                              "% of Median",
-                              "% of Cleans")) %>%
-    kable_styling("hover", full_width = TRUE,
-                  position = "left", )
-}
-
-tableOutput("t3")
 ```
 
 <br>
@@ -170,6 +157,8 @@ output$p5 <- renderPlotly({
   plot_ly(
   x = ~presence,
   y = ~reorder(litter_item, presence),
+  text = ~ paste0(round(presence, 0), "%"),
+  textposition = "inside",
   type = "bar",
   orientation = 'h',
   marker = list(color = "#4dc9d6")) %>% 
@@ -182,7 +171,30 @@ plotlyOutput("p5")
 
 ```
 
-### **Sources** 
+<br>
+
+```{r fig.align='left', out.width='100%'}
+
+output$t3 <-  function() {
+  item_stats %>%
+    ungroup() %>% 
+  filter(stretch_country == input$name) %>% 
+    arrange(desc(median_count, total_count)) %>%
+  select(litter_item, median_count, percent_of_median, presence) %>% 
+    kbl(
+      col.names = c("Litter Item",
+                              "Average/100m",
+                              "% of Median",
+                              "% of Cleans")) %>%
+    kable_styling("hover", full_width = TRUE,
+                  position = "left", ) %>% 
+    scroll_box(height = "400px", width = "100%")
+}
+
+tableOutput("t3")
+```
+
+### **Litter Source** 
 
 This looks at  the main sources of litter found across all surveys. Source of 
 beach litter is a proxy for where that litter has likely derived from. Currently, 
@@ -245,7 +257,7 @@ tableOutput("t4")
 ```
 <br>
 
-### **Materials**
+### **Material Composition**
 
 This looks at the material composition of litter found across all surveys. 
 Currently, there are 11 categories which refer to the main construction material 
@@ -302,4 +314,206 @@ output$t5 <-  function() {
 
 tableOutput("t5")
  
+```
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+### **Choropleth map**
+
+Use these choropleth maps to explore the spatial prevalence of key items. 
+This makes it easy to identify any hotspots around the UK coastline. The map is 
+divided into county regions. 
+
+```{r echo=FALSE, out.width= '100%', out.height= 1000, warning=FALSE}
+
+# Polygon highlighting options
+poly_highlighting = highlightOptions(
+  weight = 3,
+  color = "white",
+  fillOpacity = 1,
+  bringToFront = TRUE
+)
+
+# Tooltip (label) options
+tooltip_options = labelOptions(
+  direction = "auto",
+  textsize = "15px",
+  opacity = 0.9,
+  style = list(
+    "font-family" = "Arial",
+    "padding" = "6px",
+    "border-color" = "black"
+  )
+)
+
+# Colour bins
+bins_SRD = c(0, 1, 5, 10, 20, 50, 100, 350)
+bins_DRS = c(0, 1, 5, 10, 20, 50, 100, 200)
+bins_SUP = c(0, 1, 5, 10, 20, 50, 100, 350)
+bins_wet_wipe = c(0, 1, 5, 10, 20, 50, 100, 350)
+
+SRD_labels = c("0", "1-2", "2-5", "5-10", "10-20", "20-50", "50-100", "100-350")
+DRS_labels = c("0", "1-2", "2-5", "5-10", "10-20", "20-50", "50-100", "100-350")
+SUP_labels = c("0", "1-2", "2-5", "5-10", "10-20", "20-50", "50-100", "100-350")
+wet_wipe_labels = c("0", "1-2", "2-5", "5-10", "10-20", "20-50", "50-100", "100-350")
+
+# Define colour palettes and bins
+pal_SRD = colorBin("YlOrRd", domain = key_stats_map$SRD_median_count, bins = bins_SRD)
+pal_DRS = colorBin("YlOrRd", domain = key_stats_map$DRS_median_count, bins = bins_DRS)
+pal_SUP = colorBin("YlOrRd", domain = key_stats_map$SUP_median_count, bins = bins_SUP)
+pal_wet_wipe = colorBin("YlOrRd", domain = key_stats_map$wet_wipe_median_count, bins = bins_wet_wipe)
+
+add_legend = function(map, var_id, var_pal, var_title, ...){
+  addLegend(
+    map = map,
+    data = key_stats_map,
+    opacity = 0.7,
+    na.label = "No data",
+    position = "bottomright",
+    layerId = var_id,
+    title = var_id,
+    pal = var_pal,
+    # Required in order to select the correct variable via var_id
+    values = select(key_stats_map, starts_with(str_sub(var_id, 1, 10))),
+    ...
+  )
+}
+
+# Function to add variable choropleths to map
+add_choropleth = function(map, var_id, var_pal, ...){
+  # Variable ID
+  var_colname = vars_select(colnames(key_stats_map), starts_with(str_sub(var_id, 1, 10)))
+  # Tooltip (label)
+  tooltip = sprintf(
+    "<b> %s </b> <br> Surveys: %g <br> Median: %s /100m %s",
+    key_stats_map$CTYUA22NM,
+    key_stats_map$year,
+    key_stats_map[[var_colname]],
+    ifelse(var_colname == "SRD_median_count", "/100m",
+           ifelse(var_colname == "DRS_median_count", "/100m",
+                  ifelse(var_colname == "SUP_median_count", "/100m",
+                         ifelse(var_colname == "wet_wipe_median_count", "/100m"))))
+  ) %>% lapply(htmltools::HTML)
+  # Polygons
+  addPolygons(
+    map = map,
+    data = key_stats_map,
+    fillOpacity = 1,
+    color = "black",
+    weight = 1,
+    opacity = 0.4,
+    highlightOptions = poly_highlighting,
+    label = tooltip,
+    labelOptions = tooltip_options,
+    group = var_id,
+    # Required in order to select the correct variable via var_id
+    fillColor = ~var_pal(key_stats_map[[var_colname]]),
+    ...
+  )
+}
+
+# Variable IDs
+SRD = "SRD_median (Average/100m)"
+DRS = "DRS_median (Average/100m)"
+SUP = "SUP_median (Average/100m)"
+wet_wipe = "wet_wipe_median (Average/100m)"
+
+# Legend IDs
+SRD_title = "Sewage Related Debris (SRD)"
+DRS_title = "Deposit Return Scheme (DRS)"
+SUP_title = "Single Use Plastics (SUP)"
+wet_wipe_title = "Wet wipes"
+
+# Plot map
+m1 <-
+  leaflet() %>%
+  # Set view and zoom level
+  setView(lng = -2.56,
+          lat = 58.50,
+          zoom = 6) %>% 
+  # Set boundaries of map - scrolling outside will bounce you back to UK
+  setMaxBounds(lng1 = -11.4, lat1 = 45.5,
+               lng2 = 8, lat2 = 61.3) %>% 
+  # Reset map to default setting
+  addResetMapButton() %>% 
+  # Add a scalebar
+  addScaleBar(
+    position = "bottomright",
+    options = scaleBarOptions(imperial = FALSE)
+  ) %>%
+  # Choropleth polygons
+  add_choropleth(var_id = SRD, var_pal = pal_SRD) %>% 
+  add_choropleth(var_id = DRS, var_pal = pal_DRS) %>% 
+  add_choropleth(var_id = SUP, var_pal = pal_SUP) %>%
+  add_choropleth(var_id = wet_wipe, var_pal = pal_wet_wipe) %>%
+  # Legends
+  add_legend(var_id = SRD, var_pal = pal_SRD, var_title = SRD_leg) %>% 
+  add_legend(var_id = DRS, var_pal = pal_DRS, var_title = DRS_leg) %>%
+  add_legend(var_id = SUP, var_pal = pal_SUP, var_title = SUP_leg) %>% 
+  add_legend(var_id = wet_wipe, var_pal = pal_wet_wipe, var_title = wet_wipe_leg) %>% 
+  
+  # Add layers control
+  addLayersControl(
+    options = layersControlOptions(collapsed = FALSE),
+    baseGroups = c(SRD, wet_wipe, DRS, SUP)
+  ) %>% 
+  # Base group title
+  htmlwidgets::onRender(
+    jsCode = "function() { $('.leaflet-control-layers-base').prepend('<label style=\"text-align:left\"><strong><font size=\"4\">Key Items</font></strong><br>Average Per 100m</label>');}"
+  ) %>% 
+  # Switch legends when a different base group is selected
+  # Code from here: https://gist.github.com/noamross/98c2053d81085517e686407096ec0a69
+  htmlwidgets::onRender("
+    function(el, x) {
+      var initialLegend = 'SRD_median (Average/100m)' // Set the initial legend to be displayed by layerId
+      var myMap = this;
+      for (var legend in myMap.controls._controlsById) {
+        var el = myMap.controls.get(legend.toString())._container;
+        if(legend.toString() === initialLegend) {
+          el.style.display = 'block';
+        } else {
+          el.style.display = 'none';
+        };
+      };
+    myMap.on('baselayerchange',
+      function (layer) {
+        for (var legend in myMap.controls._controlsById) {
+          var el = myMap.controls.get(legend.toString())._container;
+          if(legend.toString() === layer.name) {
+            el.style.display = 'block';
+          } else {
+            el.style.display = 'none';
+          };
+        };
+      });
+    }") %>% 
+  # Add information icon (model onclick)
+  # Code from here: https://stackoverflow.com/questions/68995343/r-leaflet-adding-an-information-popup-using-easybutton
+  addBootstrapDependency() 
+  #addEasyButton(easyButton(
+   # icon = "fa-info-circle", title = "Map Information",
+    #onClick = JS("function(btn, map){ $('#infobox').modal('show'); }")
+  #)) %>% 
+  #htmlwidgets::appendContent(info_content)
+
+m1
+
+```
+
+```{r}
+  downloadHandler(
+    filename = paste0("heatmap", Sys.Date(), ".png"),
+    content = function(file) {
+      mapview::mapshot(m1(), file = file,
+              cliprect = "viewport",
+              selfcontained = FALSE)
+    } # end of content() function
+  ) # end of downloadHandler() function
 ```
